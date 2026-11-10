@@ -1,13 +1,11 @@
 # 🌍 GeoDocker Challenge — Mapa Colaborativo de Ocorrências Urbanas
 
-> **Atividade Prática de DevOps — Avaliação de 3,0 Pontos**  
+> **Atividade Prática de DevOps**  
 > **Equipe:**  
 > - 👨‍💻 **Hermes Tupinambá**  
 > - 👨‍💻 **Carlos Garcia**  
 > - 👨‍💻 **Enzo Brito**  
 > 
-> **Período:** 06 a 10/11/2026 | **Entrega:** 10/11/2026
-
 ---
 
 ## 📌 1. Visão Geral do Projeto
