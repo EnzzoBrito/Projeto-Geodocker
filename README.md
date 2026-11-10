@@ -2,7 +2,7 @@
 
 > **Atividade Prática de DevOps**  
 > **Equipe:**  
-> - 👨‍💻 **Hermes Tupinambá**  
+> - 👨‍💻 **Hermes da Rocha Martins STupinambá**  
 > - 👨‍💻 **Carlos Garcia**  
 > - 👨‍💻 **Enzo Brito**  
 > 
