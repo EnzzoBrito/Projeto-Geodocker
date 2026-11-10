@@ -1,0 +1,109 @@
+# =============================================================================
+# GEODOCKER CHALLENGE - ATIVIDADE PRÁTICA DE DEVOPS (3,0 PONTOS)
+# Tema: Mapa Colaborativo de Ocorrências Urbanas
+# Equipe: Hermes Tupinambá, Carlos Garcia, Enzo Brito
+# =============================================================================
+
+services:
+
+  # 1. BANCO DE DADOS RELACIONAL (POSTGRESQL COM VOLUME INDEPENDENTE)
+  database:
+    image: postgres:16-alpine
+    container_name: geodocker-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-geodocker_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - geodocker-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d geodocker_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  # 2. ARMAZENAMENTO DE IMAGENS INDEPENDENTE (SEAWEEDFS COM VOLUME PRÓPRIO)
+  storage:
+    image: chrislusf/seaweedfs:latest
+    container_name: geodocker-storage
+    restart: unless-stopped
+    command: "server -dir=/data -volume.max=10 -s3"
+    ports:
+      - "8888:8888" # Filer HTTP (Upload / Download direto de fotografias)
+      - "8333:8333" # S3 API compatível
+      - "9333:9333" # Master HTTP
+    volumes:
+      - storage_data:/data
+    networks:
+      - geodocker-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8888/"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  # 3. BACKEND (FASTAPI / REST API COM REGRAS DE NEGÓCIO E CRUD)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: geodocker-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres123}@database:5432/${POSTGRES_DB:-geodocker_db}
+      STORAGE_URL: http://storage:8888
+      STORAGE_BUCKET: ocorrencias
+      PORT: 5000
+    ports:
+      - "5000:5000"
+    depends_on:
+      database:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+    networks:
+      - geodocker-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 4. FRONTEND (APLICAÇÃO WEB COM MAPA LEAFLET E INTERFACE CRUD)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: geodocker-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - geodocker-network
+
+# =============================================================================
+# VOLUMES DOCKER PERSISTENTES (DESAFIOS DEVOPS B E C)
+# =============================================================================
+volumes:
+  postgres_data:
+    name: geodocker_postgres_data
+  storage_data:
+    name: geodocker_storage_data
+
+# =============================================================================
+# REDE DOCKER EM MODO BRIDGE (DESAFIO DEVOPS D)
+# =============================================================================
+networks:
+  geodocker-network:
+    name: geodocker_network
+    driver: bridge

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoDocker Challenge | Mapa Colaborativo de Ocorrências</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-['Inter'] selection:bg-indigo-500 selection:text-white overflow-hidden">
+
+  <!-- NAVBAR / HEADER -->
+  <header class="h-16 border-b border-slate-800 bg-slate-900/90 backdrop-blur z-20 flex-shrink-0 flex items-center justify-between px-4 sm:px-6">
+    <!-- Logo e Título -->
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-base sm:text-lg font-bold text-white tracking-tight">GeoDocker</h1>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">DevOps Challenge (3,0 pts)</span>
+        </div>
+        <p class="text-xs text-slate-400 truncate max-w-xs sm:max-w-md">Mapa Colaborativo de Ocorrências Urbanas</p>
+      </div>
+    </div>
+
+    <!-- Integrantes da Equipe -->
+    <div class="hidden lg:flex items-center gap-2 bg-slate-950/60 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
+      <span class="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Equipe:</span>
+      <span class="text-slate-200 font-medium">Hermes Tupinambá</span> &bull;
+      <span class="text-slate-200 font-medium">Carlos Garcia</span> &bull;
+      <span class="text-slate-200 font-medium">Enzo Brito</span>
+    </div>
+
+    <!-- Botões de Ação no Header -->
+    <div class="flex items-center space-x-2">
+      <!-- Status dos Serviços -->
+      <button id="btn-status" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 hover:text-white transition border border-slate-700 flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>Serviços</span>
+      </button>
+
+      <!-- Botão Seeding DevOps -->
+      <button id="btn-seed" class="hidden sm:flex px-3 py-1.5 rounded-lg bg-indigo-950 hover:bg-indigo-900 text-xs text-indigo-300 hover:text-white transition border border-indigo-800/60 items-center gap-1.5" title="Insere as 5 ocorrências urbanas do teste de persistência">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        <span>Popular 5 Testes</span>
+      </button>
+
+      <!-- Botão Nova Ocorrência -->
+      <button id="btn-nova-ocorrencia" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white transition shadow-lg shadow-emerald-600/20 flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+        <span>Registrar</span>
+      </button>
+
+      <!-- Toggle Drawer Mobile -->
+      <button id="btn-toggle-sidebar" class="md:hidden p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ÁREA DE TRABALHO: MAPA + PAINEL LATERAL -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- MAPA LEAFLET -->
+    <div id="map" class="flex-1 h-full z-0"></div>
+
+    <!-- INSTRUÇÃO FLUTUANTE DE CLIQUE NO MAPA -->
+    <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none bg-slate-900/90 border border-slate-700 backdrop-blur px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 text-xs text-slate-300 animate-fade-in">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+      <span>Dica: <b>Clique no mapa</b> para marcar e cadastrar uma ocorrência urbana</span>
+    </div>
+
+    <!-- PAINEL LATERAL (CRUD & LISTAGEM) -->
+    <aside id="sidebar" class="w-full sm:w-96 md:w-[420px] bg-slate-900 border-l border-slate-800 flex flex-col z-10 transition-transform duration-300 absolute inset-y-0 right-0 md:relative md:translate-x-0 translate-x-full shadow-2xl">
+      
+      <!-- Cabeçalho do Painel Lateral -->
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>Ocorrências Urbanas</span>
+            <span id="badge-total" class="px-2 py-0.5 rounded-full bg-slate-800 text-xs font-mono text-emerald-400 border border-slate-700">0</span>
+          </h2>
+          <p class="text-[11px] text-slate-400">PostgreSQL + SeaweedFS independentes</p>
+        </div>
+        <button id="btn-close-sidebar" class="md:hidden text-slate-400 hover:text-white p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Filtros Rápidos -->
+      <div class="p-3 border-b border-slate-800 bg-slate-950/40 space-y-2">
+        <div class="flex items-center gap-2">
+          <input type="text" id="filtro-busca" placeholder="Buscar por título ou descrição..." class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          <select id="filtro-categoria" class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-indigo-500">
+            <option value="">Todas as Categorias</option>
+            <option value="Buraco em via pública">Buracos</option>
+            <option value="Alagamento">Alagamentos</option>
+            <option value="Descarte irregular de lixo">Lixo / Entulho</option>
+            <option value="Iluminação pública">Iluminação</option>
+            <option value="Acessibilidade">Acessibilidade</option>
+            <option value="Outros">Outros</option>
+          </select>
+          <select id="filtro-status" class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-indigo-500">
+            <option value="">Todos os Status</option>
+            <option value="Pendente">Pendente</option>
+            <option value="Em Análise">Em Análise</option>
+            <option value="Em Andamento">Em Andamento</option>
+            <option value="Resolvido">Resolvido</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Lista Rolável de Ocorrências -->
+      <div id="lista-ocorrencias" class="flex-1 overflow-y-auto p-3 space-y-3 divide-y divide-slate-800/40">
+        <!-- Itens inseridos via JavaScript -->
+        <div class="text-center py-12 text-slate-500 text-xs">
+          Carregando ocorrências...
+        </div>
+      </div>
+
+      <!-- Rodapé do Painel -->
+      <div class="p-3 border-t border-slate-800 bg-slate-950/60 text-[11px] text-slate-400 flex items-center justify-between">
+        <span>Persistência Docker Ativa</span>
+        <button id="btn-atualizar" class="text-indigo-400 hover:text-indigo-300 font-medium inline-flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          Recarregar
+        </button>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL DE CADASTRO / EDIÇÃO DE OCORRÊNCIA -->
+  <!-- ========================================================================= -->
+  <div id="modal-form" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-in">
+      
+      <!-- Cabeçalho do Modal -->
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+        <div>
+          <h3 id="modal-title" class="text-base font-bold text-white">Registrar Nova Ocorrência</h3>
+          <p class="text-xs text-slate-400">Insira as informações e a fotografia do local</p>
+        </div>
+        <button id="btn-close-modal" class="text-slate-400 hover:text-white p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Corpo do Formulário -->
+      <form id="form-ocorrencia" class="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
+        <input type="hidden" id="form-id" name="id">
+
+        <!-- Título -->
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Título da Ocorrência *</label>
+          <input type="text" id="form-titulo" name="titulo" required placeholder="Ex.: Buraco de grandes proporções na via" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <!-- Categoria e Prioridade -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Categoria *</label>
+            <select id="form-categoria" name="categoria" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
+              <option value="Buraco em via pública">Buraco em via pública</option>
+              <option value="Alagamento">Alagamento</option>
+              <option value="Descarte irregular de lixo">Descarte irregular de lixo</option>
+              <option value="Iluminação pública">Iluminação pública</option>
+              <option value="Acessibilidade">Acessibilidade comprometida</option>
+              <option value="Outros">Outros</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Prioridade</label>
+            <select id="form-prioridade" name="prioridade" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
+              <option value="Baixa">Baixa</option>
+              <option value="Média" selected>Média</option>
+              <option value="Alta">Alta</option>
+              <option value="Urgente">Urgente</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Status</label>
+          <select id="form-status" name="status" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
+            <option value="Pendente" selected>Pendente</option>
+            <option value="Em Análise">Em Análise</option>
+            <option value="Em Andamento">Em Andamento</option>
+            <option value="Resolvido">Resolvido</option>
+          </select>
+        </div>
+
+        <!-- Coordenadas Geográficas -->
+        <div class="grid grid-cols-2 gap-3 bg-slate-950/70 p-3 rounded-xl border border-slate-800">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Latitude *</label>
+            <input type="number" step="any" id="form-lat" name="latitude" required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-100 font-mono text-xs focus:outline-none focus:border-emerald-500">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Longitude *</label>
+            <input type="number" step="any" id="form-lng" name="longitude" required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-100 font-mono text-xs focus:outline-none focus:border-emerald-500">
+          </div>
+        </div>
+
+        <!-- Descrição -->
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Descrição Detalhada *</label>
+          <textarea id="form-descricao" name="descricao" rows="3" required placeholder="Descreva os riscos, dimensões ou pontos de referência..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 resize-none"></textarea>
+        </div>
+
+        <!-- Fotografia da Ocorrência -->
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1" id="label-foto">Fotografia da Ocorrência *</label>
+          <div class="border-2 border-dashed border-slate-800 hover:border-emerald-500/50 rounded-xl p-3 text-center bg-slate-950/40 cursor-pointer relative group">
+            <input type="file" id="form-foto" name="foto" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+            <div id="foto-preview-container" class="hidden items-center justify-center gap-3">
+              <img id="foto-preview" src="" alt="Prévia" class="w-16 h-16 object-cover rounded-lg border border-slate-700">
+              <div class="text-left">
+                <p id="foto-nome" class="font-semibold text-slate-200 truncate max-w-[200px]"></p>
+                <p class="text-[10px] text-emerald-400">Foto selecionada para envio ao SeaweedFS</p>
+              </div>
+            </div>
+            <div id="foto-prompt" class="space-y-1">
+              <svg class="w-6 h-6 mx-auto text-slate-500 group-hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              <p class="text-slate-400"><span class="text-emerald-400 underline">Clique para selecionar foto</span> ou arraste</p>
+              <p class="text-[10px] text-slate-600">JPG, PNG, WEBP persistido no volume independente</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botões de Envio -->
+        <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
+          <button type="button" id="btn-cancelar" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition">Cancelar</button>
+          <button type="submit" id="btn-salvar" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-lg shadow-emerald-600/30 transition flex items-center gap-1.5">
+            <span id="btn-salvar-texto">Salvar Ocorrência</span>
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL DE STATUS E DIAGNÓSTICO DEVOPS (DESAFIO D) -->
+  <!-- ========================================================================= -->
+  <div id="modal-status" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl p-6 space-y-5 animate-scale-in">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-base font-bold text-white">Diagnóstico da Arquitetura Docker</h3>
+          <p class="text-xs text-slate-400">Comunicação e persistência entre serviços</p>
+        </div>
+        <button id="btn-close-status" class="text-slate-400 hover:text-white p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+          <div>
+            <p class="font-semibold text-white">Frontend Web</p>
+            <p class="text-[11px] text-slate-400">Contêiner Nginx (porta 8080)</p>
+          </div>
+          <span class="px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 font-mono text-[11px] border border-emerald-500/20">OPERACIONAL</span>
+        </div>
+
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+          <div>
+            <p class="font-semibold text-white">Backend REST API</p>
+            <p class="text-[11px] text-slate-400">Contêiner FastAPI/Python (porta 5000)</p>
+          </div>
+          <span id="status-backend" class="px-2 py-1 rounded bg-slate-800 text-slate-400 font-mono text-[11px]">Verificando...</span>
+        </div>
+
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+          <div>
+            <p class="font-semibold text-white">Banco de Dados Relacional</p>
+            <p class="text-[11px] text-slate-400">PostgreSQL 16 com volume <code class="text-indigo-400">postgres_data</code></p>
+          </div>
+          <span id="status-postgres" class="px-2 py-1 rounded bg-slate-800 text-slate-400 font-mono text-[11px]">Verificando...</span>
+        </div>
+
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+          <div>
+            <p class="font-semibold text-white">Armazenamento de Imagens</p>
+            <p class="text-[11px] text-slate-400">SeaweedFS independente com volume <code class="text-indigo-400">storage_data</code></p>
+          </div>
+          <span id="status-storage" class="px-2 py-1 rounded bg-slate-800 text-slate-400 font-mono text-[11px]">Verificando...</span>
+        </div>
+      </div>
+
+      <div class="p-3 rounded-xl bg-indigo-950/40 border border-indigo-900/50 text-[11px] text-indigo-300">
+        💡 <b>Desafio DevOps D:</b> Os contêineres comunicam-se pelos nomes de serviço dentro da rede <code>geodocker-network</code> (ex.: <code>http://database:5432</code> e <code>http://storage:8888</code>).
+      </div>
+
+      <div class="flex justify-end">
+        <button id="btn-close-status-ok" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/map.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
