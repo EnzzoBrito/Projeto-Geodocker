@@ -51,6 +51,7 @@ services:
 
   # 3. BACKEND (FASTAPI / REST API COM REGRAS DE NEGÓCIO E CRUD)
   backend:
+    image: geodocker-backend:1.0
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -79,6 +80,7 @@ services:
 
   # 4. FRONTEND (APLICAÇÃO WEB COM MAPA LEAFLET E INTERFACE CRUD)
   frontend:
+    image: geodocker-frontend:1.0
     build:
       context: ./frontend
       dockerfile: Dockerfile
